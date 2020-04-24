@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PantherDriver\Extension;
+namespace PantherExtension\Extension;
 
 use Behat\Testwork\ServiceContainer\Extension;
 use Behat\Testwork\ServiceContainer\ExtensionManager;

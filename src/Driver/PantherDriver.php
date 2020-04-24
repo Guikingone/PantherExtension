@@ -2,25 +2,33 @@
 
 declare(strict_types=1);
 
-namespace PantherDriver\Driver;
+namespace PantherExtension\Driver;
 
-use Behat\Mink\Driver\DriverInterface;
+use Behat\Mink\Driver\CoreDriver;
 use Behat\Mink\Exception\DriverException;
 use Behat\Mink\Exception\UnsupportedDriverActionException;
 use Behat\Mink\Session;
 use Facebook\WebDriver\Exception\NoSuchCookieException;
+use Facebook\WebDriver\Remote\LocalFileDetector;
 use Facebook\WebDriver\WebDriverBy;
 use Facebook\WebDriver\WebDriverDimension;
-use PantherDriver\Driver\Exception\LogicException;
+use Facebook\WebDriver\WebDriverSelect;
+use PantherExtension\Driver\Element\PantherElement;
+use PantherExtension\Driver\Exception\InvalidArgumentException;
+use PantherExtension\Driver\Exception\LogicException;
 use Facebook\WebDriver\WebDriver;
 use Symfony\Component\Panther\Client;
 
 /**
  * @author Guillaume LOULIER <contact@guillaumeloulier.fr>
  */
-final class PantherDriver implements DriverInterface
+final class PantherDriver extends CoreDriver
 {
+    private const ALLOWED_DRIVERS = ['chrome', 'firefox', 'selenium'];
+
     private $client;
+    private $requests = [];
+    private $session;
 
     public function __construct(string $driver = 'chrome')
     {
@@ -56,7 +64,7 @@ final class PantherDriver implements DriverInterface
      */
     public function setSession(Session $session)
     {
-        // TODO
+        $this->session = $session;
     }
 
     /**
@@ -105,14 +113,6 @@ final class PantherDriver implements DriverInterface
     public function back()
     {
         $this->client->back();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setBasicAuth($user, $password)
-    {
-        // TODO
     }
 
     /**
@@ -249,7 +249,14 @@ final class PantherDriver implements DriverInterface
      */
     public function find($xpath)
     {
-        return $this->client->findElement(WebDriverBy::xpath($xpath));
+        $nodes = $this->client->findElements(WebDriverBy::xpath($xpath));
+        $elements = [];
+
+        foreach ($nodes as $key => $node) {
+            $elements[] = new PantherElement(sprintf('(%s)[%d]', $xpath, $key+1), $this->session);
+        }
+
+        return $elements;
     }
 
     /**
@@ -273,7 +280,7 @@ final class PantherDriver implements DriverInterface
      */
     public function getHtml($xpath)
     {
-        // TODO
+        return $this->client->findElement(WebDriverBy::xpath($xpath))->html();
     }
 
     /**
@@ -281,7 +288,7 @@ final class PantherDriver implements DriverInterface
      */
     public function getOuterHtml($xpath)
     {
-        // TODO
+        return $this->client->getCrawler()->filterXPath($xpath)->outerHtml();
     }
 
     /**
@@ -305,7 +312,9 @@ final class PantherDriver implements DriverInterface
      */
     public function setValue($xpath, $value)
     {
-        // TODO
+        $element = $this->client->findElement(WebDriverBy::xpath($xpath));
+
+        $element->sendKeys($value);
     }
 
     /**
@@ -315,8 +324,9 @@ final class PantherDriver implements DriverInterface
     {
         $element = $this->client->findElement(WebDriverBy::xpath($xpath));
 
-        // TODO
-
+        if (!$element->isSelected()) {
+            $element->click();
+        }
     }
 
     /**
@@ -326,7 +336,9 @@ final class PantherDriver implements DriverInterface
     {
         $element = $this->client->findElement(WebDriverBy::xpath($xpath));
 
-        // TODO
+        if ($element->isSelected()) {
+            $element->click();
+        }
     }
 
     /**
@@ -342,7 +354,11 @@ final class PantherDriver implements DriverInterface
      */
     public function selectOption($xpath, $value, $multiple = false)
     {
+        $element = $this->client->findElement(WebDriverBy::xpath($xpath));
 
+        $selectElement = new WebDriverSelect($element);
+        $selectElement->deselectAll();
+        $selectElement->selectByValue($value);
     }
 
     /**
@@ -366,14 +382,10 @@ final class PantherDriver implements DriverInterface
      */
     public function doubleClick($xpath)
     {
-    }
+        $element = $this->client->findElement(WebDriverBy::xpath($xpath));
+        $mouse = $this->client->getMouse();
 
-    /**
-     * {@inheritdoc}
-     */
-    public function rightClick($xpath)
-    {
-        // TODO: Implement rightClick() method.
+        $mouse->doubleClick($element->getCoordinates());
     }
 
     /**
@@ -381,7 +393,14 @@ final class PantherDriver implements DriverInterface
      */
     public function attachFile($xpath, $path)
     {
-        // TODO: Implement attachFile() method.
+        $element = $this->client->findElement(WebDriverBy::xpath($xpath));
+
+        if ('input' !== $element->getTagName()) {
+            throw new InvalidArgumentException(sprintf('The current element cannot receive file, please check the selector'));
+        }
+
+        $element->setFileDetector(new LocalFileDetector());
+        $element->sendKeys($path);
     }
 
     /**
@@ -389,7 +408,7 @@ final class PantherDriver implements DriverInterface
      */
     public function isVisible($xpath)
     {
-        $element = $this->client->findElement(WebDriverBy::xpath($xpath));
+        $element = $this->client->getCrawler()->findElement(WebDriverBy::xpath($xpath));
 
         return $element->isDisplayed();
     }
@@ -408,33 +427,11 @@ final class PantherDriver implements DriverInterface
     /**
      * {@inheritdoc}
      */
-    public function focus($xpath)
-    {
-        // TODO
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function blur($xpath)
-    {
-        // TODO
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function keyPress($xpath, $char, $modifier = null)
     {
-        // TODO
-    }
+        $keyboard = $this->client->getKeyboard();
 
-    /**
-     * {@inheritdoc}
-     */
-    public function keyDown($xpath, $char, $modifier = null)
-    {
-        // TODO
+        $keyboard->pressKey($char);
     }
 
     /**
@@ -442,7 +439,9 @@ final class PantherDriver implements DriverInterface
      */
     public function keyUp($xpath, $char, $modifier = null)
     {
-        // TODO
+        $keyboard = $this->client->getKeyboard();
+
+        $keyboard->releaseKey($char);
     }
 
     /**
@@ -515,6 +514,30 @@ final class PantherDriver implements DriverInterface
         $this->client->findElement(WebDriverBy::xpath($xpath))->submit();
     }
 
+    public function waitFor(string $element, int $timeoutInSeconds = 30, int $intervalInMillisecond = 250): void
+    {
+        if (0 === strpos('@', $element)) {
+            $this->waitForAjax($element, $timeoutInSeconds);
+        }
+
+        $elementLocator = trim($element);
+
+        if ('' === $elementLocator || '/' !== $elementLocator[0]) {
+            $this->client->waitFor($element, $timeoutInSeconds, $intervalInMillisecond);
+        }
+    }
+
+    public function waitForAjax(string $requestIdentifier, int $timeoutInSeconds = 30): void
+    {
+        if (!\array_key_exists($requestIdentifier, $this->requests)) {
+            throw new InvalidArgumentException(
+                sprintf('The "%s" alias does not refer to a current request, please be sure to watch a request before referring to it', $requestIdentifier)
+            );
+        }
+
+        // TODO
+    }
+
     public function getClient(): WebDriver
     {
         return $this->client;
@@ -522,6 +545,10 @@ final class PantherDriver implements DriverInterface
 
     private function defineDriver(string $driver): WebDriver
     {
+        if (!\in_array($driver, self::ALLOWED_DRIVERS)) {
+            throw new LogicException('The desired driver cannot be instantiated');
+        }
+
         switch ($driver) {
             case 'chrome':
                 return Client::createChromeClient();

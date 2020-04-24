@@ -7,6 +7,6 @@ namespace PantherExtension\Driver\Exception;
 /**
  * @author Guillaume LOULIER <contact@guillaumeloulier.fr>
  */
-final class LogicException extends \LogicException
+final class InvalidArgumentException extends \InvalidArgumentException
 {
 }

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Extension;
 
-use PantherDriver\Driver\PantherDriver;
-use PantherDriver\Extension\PantherFactory;
+use PantherExtension\Driver\PantherDriver;
+use PantherExtension\Extension\PantherFactory;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\Definition;
 

@@ -3,7 +3,8 @@ FROM php:7.2.22-cli
 ENV APP_DIR=/srv/app \
     BUILD_SCRIPTS_DIR=/build-scripts
 
-RUN apt-get install -y --no-install-recommends \
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
        zip=3.0-* \
        unzip=6.0-* \
        git=1:2.20.* \

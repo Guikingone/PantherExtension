@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Driver;
 
-use PantherDriver\Driver\Exception\LogicException;
-use PantherDriver\Driver\PantherDriver;
+use PantherExtension\Driver\Exception\LogicException;
+use PantherExtension\Driver\PantherDriver;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Panther\Client;
 

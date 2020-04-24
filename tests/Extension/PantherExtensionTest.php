@@ -6,8 +6,8 @@ namespace Tests\Extension;
 
 use Behat\MinkExtension\ServiceContainer\MinkExtension;
 use Behat\Testwork\ServiceContainer\ExtensionManager;
-use PantherDriver\Extension\PantherExtension;
-use PantherDriver\Extension\PantherFactory;
+use PantherExtension\Extension\PantherExtension;
+use PantherExtension\Extension\PantherFactory;
 use PHPUnit\Framework\TestCase;
 
 /**

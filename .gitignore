@@ -1,2 +1,11 @@
 /vendor
 composer.lock
+
+# PHPunit
+.phpunit.result.cache
+
+# Docker
+docker-compose.override.yml
+
+# Style
+.php_cs.cache

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace PantherDriver\Extension;
+namespace PantherExtension\Extension;
 
 use Behat\MinkExtension\ServiceContainer\Driver\DriverFactory;
-use PantherDriver\Driver\PantherDriver;
+use PantherExtension\Driver\PantherDriver;
 use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
 use Symfony\Component\DependencyInjection\Definition;
 
@@ -40,8 +40,7 @@ final class PantherFactory implements DriverFactory
         $builder
             ->children()
                 ->scalarNode('driver')
-                    ->isRequired()
-                    ->cannotBeEmpty()
+                    ->defaultValue('chrome')
                 ->end()
             ->end()
         ;

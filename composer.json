@@ -17,25 +17,28 @@
     "behat/mink": "^1.5",
     "behat/mink-extension": "^2.0",
     "symfony/config": "^2.7|^3.0|^4.0",
-    "symfony/panther": "0.7.1",
+    "symfony/panther": "0.7.1"
+  },
+  "require-dev": {
+    "friendsofphp/php-cs-fixer": "^2.16",
     "phpunit/phpunit": "^8.5"
   },
   "autoload": {
     "psr-4": {
-      "PantherDriver\\": "src/",
-      "PantherDriver\\Driver\\": "src/Driver/",
-      "PantherDriver\\Driver\\Exception\\": "src/Driver/Exception/"
+      "PantherExtension\\": "src/",
+      "PantherExtension\\Context\\": "src/Context/",
+      "PantherExtension\\Driver\\": "src/Driver/",
+      "PantherExtension\\Driver\\Exception\\": "src/Driver/Exception/",
+      "PantherExtension\\Extension\\": "src/Extension/"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "Tests\\": "tests/"
+      "Tests\\": "tests/",
+      "Tests\\Context\\": "tests/Context/",
+      "Tests\\Driver\\": "tests/Driver/",
+      "Tests\\Extension\\": "tests/Extension/"
     }
   },
-  "minimum-stability": "stable",
-  "extra": {
-    "branch-alias": {
-      "dev-master": "1.0.x-dev"
-    }
-  }
+  "minimum-stability": "stable"
 }
