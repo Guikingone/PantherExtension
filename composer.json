@@ -1,0 +1,41 @@
+{
+  "name": "guikingone/panther-extension",
+  "type": "library",
+  "description": "Panther extension for Mink",
+  "keywords": ["web", "driver", "browser", "panther", "mink", "extension"],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Guillaume Loulier",
+      "email": "contact@guillaumeloulier.fr"
+    }
+  ],
+  "require": {
+    "ext-zip": "*",
+    "php": ">=7.1",
+    "behat/behat": "^3.0.5",
+    "behat/mink": "^1.5",
+    "behat/mink-extension": "^2.0",
+    "symfony/config": "^2.7|^3.0|^4.0",
+    "symfony/panther": "0.7.1",
+    "phpunit/phpunit": "^8.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "PantherDriver\\": "src/",
+      "PantherDriver\\Driver\\": "src/Driver/",
+      "PantherDriver\\Driver\\Exception\\": "src/Driver/Exception/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
+    }
+  },
+  "minimum-stability": "stable",
+  "extra": {
+    "branch-alias": {
+      "dev-master": "1.0.x-dev"
+    }
+  }
+}

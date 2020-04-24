@@ -1,0 +1,9 @@
+version: '3.7'
+
+services:
+  php:
+    build:
+      context: docker/php
+    volumes:
+      - ./:/srv/app
+      - ./docker/php/php.ini:/usr/local/etc/php/php.ini
