@@ -56,8 +56,15 @@ final class PantherFactory implements DriverFactory
      */
     public function buildDriver(array $config)
     {
+        if (!\array_key_exists('selenium', $config)) {
+            $config['selenium'] = ['hub_url' => null];
+        }
+
         return new Definition(PantherDriver::class, [
             $config['driver'],
+            ['config' => [
+                'selenium' => $config['selenium'],
+            ]],
         ]);
     }
 }

@@ -1,0 +1,8 @@
+version: '3.7'
+
+services:
+  blackfire:
+    image: blackfire/blackfire
+    environment:
+      BLACKFIRE_SERVER_ID: 'test'
+      BLACKFIRE_SERVER_TOKEN: 'test'

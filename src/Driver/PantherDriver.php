@@ -9,9 +9,12 @@ use Behat\Mink\Exception\DriverException;
 use Behat\Mink\Exception\UnsupportedDriverActionException;
 use Behat\Mink\Session;
 use Facebook\WebDriver\Exception\NoSuchCookieException;
+use Facebook\WebDriver\Exception\UnsupportedOperationException;
+use Facebook\WebDriver\Exception\WebDriverException;
 use Facebook\WebDriver\Remote\LocalFileDetector;
 use Facebook\WebDriver\WebDriverBy;
 use Facebook\WebDriver\WebDriverDimension;
+use Facebook\WebDriver\WebDriverOptions;
 use Facebook\WebDriver\WebDriverSelect;
 use PantherExtension\Driver\Element\PantherElement;
 use PantherExtension\Driver\Exception\InvalidArgumentException;
@@ -25,15 +28,34 @@ use Symfony\Component\Panther\Client;
 final class PantherDriver extends CoreDriver
 {
     private const ALLOWED_DRIVERS = ['chrome', 'firefox', 'selenium'];
+    public const DEFAULT_CLIENT_KEY = '_root';
 
+    /**
+     * @var Client[]
+     */
     private $additionalClients = [];
+
+    /**
+     * @var Client
+     */
     private $client;
+
+    /**
+     * @var string[]
+     */
     private $requests = [];
+
+    /**
+     * @var Session
+     */
     private $session;
 
-    public function __construct(string $driver = 'chrome')
+    /**
+     * @param string[] $options
+     */
+    public function __construct(string $driver = 'chrome', array $options = [])
     {
-        $this->client = $this->defineDriver($driver);
+        $this->client = $this->defineDriver($driver, $options);
     }
 
     /**
@@ -515,6 +537,38 @@ final class PantherDriver extends CoreDriver
         $this->client->findElement(WebDriverBy::xpath($xpath))->submit();
     }
 
+    public function moveTofullScreen(): void
+    {
+        $options = $this->client->manage();
+
+        try {
+            $options->window()->fullscreen();
+        } catch (UnsupportedOperationException $exception) {
+            throw new DriverException('The window cannot be be moved to fullscreen.');
+        }
+    }
+
+    public function setOrientation(string $orientationMode = 'PORTRAIT'): void
+    {
+        $options = $this->client->manage();
+
+        try {
+            $options->window()->setScreenOrientation($orientationMode);
+        } catch (WebDriverException $exception) {
+            throw new DriverException(sprintf('The window cannot be be moved to "%s" mode.', $orientationMode));
+        }
+    }
+
+    /**
+     * @param string $type {@see WebDriverOptions::getLog()}
+     */
+    public function getLogs(string $type): array
+    {
+        $options = $this->client->manage();
+
+        return $options->getLog($type);
+    }
+
     public function waitFor(string $element, int $timeoutInSeconds = 30, int $intervalInMillisecond = 250): void
     {
         if (0 === strpos('@', $element)) {
@@ -539,10 +593,34 @@ final class PantherDriver extends CoreDriver
         // TODO
     }
 
-    public function createAdditionalClient(string $name, string $driver): void
+    public function createAdditionalClient(string $name, string $driver, array $options = []): void
     {
+        if (self::DEFAULT_CLIENT_KEY === $name) {
+            throw new InvalidArgumentException(
+                sprintf('The "%s" client name is reserved, please use a different name.', self::DEFAULT_CLIENT_KEY)
+            );
+        }
+
+        foreach ($options as $option) {
+            if (!\is_string($option)) {
+                continue;
+            }
+
+            $definedOptions = explode(' => ', $option);
+
+            if (0 === \count($definedOptions)) {
+                continue;
+            }
+
+            if ('port' === $definedOptions[0]) {
+                $options['port'] = $definedOptions[1];
+            }
+        }
+
         try {
-            $this->additionalClients[$name] = $this->defineDriver($driver);
+            $this->additionalClients[$name] = $this->defineDriver($driver, array_merge($options, [
+                'port' => $options['port'] ?? 9080,
+            ]));
         } catch (LogicException $exception) {
             throw new DriverException('The desired client cannot be created, please check the requested driver and options.');
         }
@@ -554,16 +632,47 @@ final class PantherDriver extends CoreDriver
             throw new InvalidArgumentException(sprintf('The desired "%s" cannot be found.', $name));
         }
 
-        $this->additionalClients['_root'] = $this->client;
+        if (!\array_key_exists(self::DEFAULT_CLIENT_KEY, $this->additionalClients)) {
+            $this->additionalClients[self::DEFAULT_CLIENT_KEY] = $this->client;
+        }
+
         $this->client = $this->additionalClients[$name];
     }
 
-    public function getClient(): WebDriver
+    public function removeClient(string $name): void
+    {
+        if (self::DEFAULT_CLIENT_KEY === $name) {
+            throw new DriverException(sprintf('The "%s" client cannot removed!', self::DEFAULT_CLIENT_KEY));
+        }
+
+        if (\array_key_exists(self::DEFAULT_CLIENT_KEY, $this->additionalClients)) {
+            $this->client = $this->additionalClients[self::DEFAULT_CLIENT_KEY];
+        }
+
+        unset($this->additionalClients[$name]);
+    }
+
+    public function resetClients(): void
+    {
+        if (!\array_key_exists(self::DEFAULT_CLIENT_KEY, $this->additionalClients)) {
+            $this->additionalClients = [];
+        }
+
+        $this->client = $this->additionalClients[self::DEFAULT_CLIENT_KEY];
+        $this->additionalClients = [];
+    }
+
+    public function getClient(): Client
     {
         return $this->client;
     }
 
-    private function defineDriver(string $driver): WebDriver
+    public function getClients(): array
+    {
+        return [$this->client] + $this->additionalClients;
+    }
+
+    private function defineDriver(string $driver, array $options = []): WebDriver
     {
         if (!\in_array($driver, self::ALLOWED_DRIVERS)) {
             throw new LogicException('The desired driver cannot be instantiated');
@@ -571,13 +680,14 @@ final class PantherDriver extends CoreDriver
 
         switch ($driver) {
             case 'chrome':
-                return Client::createChromeClient();
+                return Client::createChromeClient(null, null, $options);
                 break;
             case 'firefox':
-                return Client::createFirefoxClient();
+                return Client::createFirefoxClient(null, null, $options);
                 break;
             case 'selenium':
-                return Client::createSeleniumClient();
+                $config = $options['config']['selenium'];
+                return Client::createSeleniumClient($config['hub_url'], null, null, $config);
                 break;
             default:
                 throw new LogicException('The desired driver cannot be instantiated');

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PantherExtension\Extension;
 
+use Behat\MinkExtension\ServiceContainer\MinkExtension;
 use Behat\Testwork\ServiceContainer\Extension;
 use Behat\Testwork\ServiceContainer\ExtensionManager;
 use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
@@ -29,9 +30,13 @@ final class PantherExtension implements Extension
      */
     public function initialize(ExtensionManager $extensionManager)
     {
-        if (null !== $minkExtension = $extensionManager->getExtension('mink')) {
-            $minkExtension->registerDriverFactory(new PantherFactory());
+        $minkExtension = $extensionManager->getExtension('mink');
+
+        if (!$minkExtension instanceof MinkExtension) {
+            return;
         }
+
+        $minkExtension->registerDriverFactory(new PantherFactory());
     }
 
     /**

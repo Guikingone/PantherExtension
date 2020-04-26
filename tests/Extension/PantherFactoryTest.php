@@ -30,4 +30,18 @@ final class PantherFactoryTest extends TestCase
         static::assertInstanceOf(Definition::class, $definition);
         static::assertSame(PantherDriver::class, $definition->getClass());
     }
+
+    public function testDefinitionIsBuiltWithSelenium(): void
+    {
+        $factory = new PantherFactory();
+        $definition = $factory->buildDriver([
+            'driver' => 'chrome',
+            'selenium' => [
+                'hub_url' => 'http://127.0.0.1:4444/wd/hub',
+            ],
+        ]);
+
+        static::assertInstanceOf(Definition::class, $definition);
+        static::assertSame(PantherDriver::class, $definition->getClass());
+    }
 }

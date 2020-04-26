@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace PantherExtension\Context;
 
-use Behat\Mink\Driver\DriverInterface;
+use Behat\Behat\Context\Environment\InitializedContextEnvironment;
+use Behat\Behat\Hook\Scope\AfterScenarioScope;
+use Behat\Gherkin\Node\TableNode;
 use Behat\MinkExtension\Context\RawMinkContext;
 use Facebook\WebDriver\Exception\NoSuchElementException;
 use Facebook\WebDriver\Exception\TimeoutException;
@@ -16,6 +18,29 @@ use PantherExtension\Driver\PantherDriver;
  */
 final class PantherContext extends RawMinkContext
 {
+    /**
+     * @AfterScenarioScope
+     */
+    public static function reset(AfterScenarioScope $scope): void
+    {
+        $environment = $scope->getEnvironment();
+
+        if (!$environment instanceof InitializedContextEnvironment) {
+            return;
+        }
+
+        $context = $environment->getContext(PantherContext::class);
+        $driver = $context->getDriver();
+
+        if (!$driver instanceof PantherDriver) {
+            throw new LogicException(
+                sprintf('The driver should be an instance of "%s", found "%s".', PantherDriver::class, get_class($driver))
+            );
+        }
+
+        $driver->resetClients();
+    }
+
     /**
      * @Given I wait for :element
      * @And   I wait for :element
@@ -77,6 +102,21 @@ final class PantherContext extends RawMinkContext
     }
 
     /**
+     * @Given I create a new set of clients :options
+     * @And   I create a new set of clients :options
+     */
+    public function iCreateANewSetOfClientUsingTheDriveAndTheFollowingOptions(TableNode $options): void
+    {
+        foreach ($options as $option) {
+            $this->getDriver()->createAdditionalClient(
+                $option['name'],
+                $option['driver'],
+                explode(', ', $option['options'] ?? '') ?? []
+            );
+        }
+    }
+
+    /**
      * @Given I switch to client :name
      * @And   I switch to client :name
      */
@@ -85,7 +125,40 @@ final class PantherContext extends RawMinkContext
         $this->getDriver()->switchToClient($name);
     }
 
-    private function getDriver(): DriverInterface
+    /**
+     * @Given I switch back to the default client
+     * @And   I switch back to the default client
+     */
+    public function iSwitchBackToDefaultClient(): void
+    {
+        $this->getDriver()->switchToClient(PantherDriver::DEFAULT_CLIENT_KEY);
+    }
+
+    /**
+     * @Given I remove the client :name
+     * @And   I remove the client :name
+     */
+    public function iRemoveTheClient(string $name): void
+    {
+        $this->getDriver()->removeClient($name);
+    }
+
+    /**
+     * @Given I should have :count clients
+     * @And   I should have :count clients
+     */
+    public function iShouldHave(int $count): void
+    {
+        $driver = $this->getDriver();
+
+        if ($count !== $clientCount = \count($driver->getClients())) {
+            throw new LogicException(
+                sprintf('The desired client count cannot be validated, found "%d".', $clientCount)
+            );
+        }
+    }
+
+    private function getDriver(): PantherDriver
     {
         $driver = $this->getSession()->getDriver();
 

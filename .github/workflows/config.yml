@@ -1,0 +1,17 @@
+name: PantherExtension CI - Config
+on: [ push, pull_request ]
+jobs:
+  panther_extension:
+    name: Configuration
+    # https://hub.docker.com/_/ubuntu/
+    runs-on: ubuntu-18.04
+    steps:
+      # https://github.com/actions/checkout (official)
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      # https://github.com/azohra/shell-linter (community)
+      - name: Lint check
+        uses: azohra/shell-linter@v0.3.0
+        with:
+          path: "docker/php"

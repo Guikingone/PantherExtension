@@ -9,3 +9,6 @@ docker-compose.override.yml
 
 # Style
 .php_cs.cache
+
+# Infection
+infection.log

@@ -20,10 +20,25 @@ final class PantherExtensionTest extends TestCase
         static::assertSame('panther', (new PantherExtension())->getConfigKey());
     }
 
+    public function testDriverCannotBeRegistered(): void
+    {
+        $minkExtension = $this->createMock(MinkExtension::class);
+        $minkExtension->expects(static::never())->method('getConfigKey')->willReturn('mink');
+        $extensionManager = new ExtensionManager([]);
+
+        $minkExtension->expects(static::never())->method('registerDriverFactory')
+            ->with(static::callback(function ($factory): bool {
+                return $factory instanceof PantherFactory;
+            }))
+        ;
+
+        (new PantherExtension())->initialize($extensionManager);
+    }
+
     public function testDriverIsRegistered(): void
     {
         $minkExtension = $this->createMock(MinkExtension::class);
-        $minkExtension->expects(static::once())->method('getConfigKey')->will($this->returnValue('mink'));
+        $minkExtension->expects(static::once())->method('getConfigKey')->willReturn('mink');
         $extensionManager = new ExtensionManager([$minkExtension]);
 
         $minkExtension->expects(static::once())->method('registerDriverFactory')
