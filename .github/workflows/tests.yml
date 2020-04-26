@@ -1,8 +1,5 @@
 name: PantherExtension CI
-on:
-  push:
-    branches:
-      - master
+on: [ push, pull_request ]
 jobs:
   panther_extension:
     name: PHP ${{ matrix.php-versions }}

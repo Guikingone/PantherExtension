@@ -42,6 +42,11 @@ final class PantherFactory implements DriverFactory
                 ->scalarNode('driver')
                     ->defaultValue('chrome')
                 ->end()
+                ->arrayNode('selenium')
+                    ->children()
+                        ->scalarNode('hub_url')->defaultNull()->end()
+                    ->end()
+                ->end()
             ->end()
         ;
     }

@@ -26,6 +26,7 @@ final class PantherDriver extends CoreDriver
 {
     private const ALLOWED_DRIVERS = ['chrome', 'firefox', 'selenium'];
 
+    private $additionalClients = [];
     private $client;
     private $requests = [];
     private $session;
@@ -536,6 +537,25 @@ final class PantherDriver extends CoreDriver
         }
 
         // TODO
+    }
+
+    public function createAdditionalClient(string $name, string $driver): void
+    {
+        try {
+            $this->additionalClients[$name] = $this->defineDriver($driver);
+        } catch (LogicException $exception) {
+            throw new DriverException('The desired client cannot be created, please check the requested driver and options.');
+        }
+    }
+
+    public function switchToClient(string $name): void
+    {
+        if (!\array_key_exists($name, $this->additionalClients)) {
+            throw new InvalidArgumentException(sprintf('The desired "%s" cannot be found.', $name));
+        }
+
+        $this->additionalClients['_root'] = $this->client;
+        $this->client = $this->additionalClients[$name];
     }
 
     public function getClient(): WebDriver

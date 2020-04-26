@@ -18,24 +18,71 @@ final class PantherContext extends RawMinkContext
 {
     /**
      * @Given I wait for :element
-     *
      * @And   I wait for :element
-     * @And   I wait for :element during :timeout
-     * @And   I wait for :element during :timeout every :interval milliseconds
-     * @And   I wait for :element to be visible
-     * @And   I wait for :element to appear
      */
-    public function iWaitForElement(string $element, int $timeoutInSeconds = 30, int $intervalInMillisecond = 250): void
+    public function iWaitForElement(string $element): void
     {
         $driver = $this->getDriver();
 
         try {
-            $driver->waitFor($element, $timeoutInSeconds, $intervalInMillisecond);
+            $driver->waitFor($element);
         } catch (TimeoutException $exception) {
             throw new LogicException(sprintf('The desired element cannot be found in the given timeout or seems to appear later than expected.'));
         } catch (NoSuchElementException $exception) {
             throw new LogicException(sprintf('The desired element cannot be found.'));
         }
+    }
+
+    /**
+     * @Given I wait for :element during :timeout
+     * @And   I wait for :element during :timeout
+     */
+    public function iWaitForElementDuring(string $element, int $timeoutInSeconds = 30): void
+    {
+        $driver = $this->getDriver();
+
+        try {
+            $driver->waitFor($element, $timeoutInSeconds);
+        } catch (TimeoutException $exception) {
+            throw new LogicException(sprintf('The desired element cannot be found in the given timeout or seems to appear later than expected.'));
+        } catch (NoSuchElementException $exception) {
+            throw new LogicException(sprintf('The desired element cannot be found.'));
+        }
+    }
+
+    /**
+     * @Given I wait for :element during :timeout every :interval
+     * @And   I wait for :element during :timeout every :interval
+     */
+    public function iWaitForElementDuringEvery(string $element, int $timeoutInSeconds = 30, int $intervalMilliseconds = 250): void
+    {
+        $driver = $this->getDriver();
+
+        try {
+            $driver->waitFor($element, $timeoutInSeconds, $intervalMilliseconds);
+        } catch (TimeoutException $exception) {
+            throw new LogicException(sprintf('The desired element cannot be found in the given timeout or seems to appear later than expected.'));
+        } catch (NoSuchElementException $exception) {
+            throw new LogicException(sprintf('The desired element cannot be found.'));
+        }
+    }
+
+    /**
+     * @Given I create a new client :name using the :driver driver
+     * @And   I create a new client :name using the :driver driver
+     */
+    public function iCreateANewClient(string $name, string $driver): void
+    {
+        $this->getDriver()->createAdditionalClient($name, $driver);
+    }
+
+    /**
+     * @Given I switch to client :name
+     * @And   I switch to client :name
+     */
+    public function iSwitchToANewClient(string $name): void
+    {
+        $this->getDriver()->switchToClient($name);
     }
 
     private function getDriver(): DriverInterface
