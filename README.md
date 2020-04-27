@@ -32,7 +32,7 @@ default:
       base_url: http://localhost
       sessions:
         default:
-          chrome:
+          panther:
             driver: 'chrome' # Or 'firefox', 'selenium', 'chrome' is the default value
 ```
 
