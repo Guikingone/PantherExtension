@@ -212,7 +212,7 @@ final class PantherContextTest extends TestCase
         $mink = $this->createMock(Mink::class);
         $mink->expects($minkInvocationCount)->method('getSession')->willReturn($session);
 
-        $driver = new PantherDriver();
+        $driver = new PantherDriver('chrome', ['webServerDir' => __DIR__]);
         $driver->setSession($session);
         $session->method('getDriver')->willReturn($driver);
 

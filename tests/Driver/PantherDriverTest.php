@@ -17,11 +17,11 @@ final class PantherDriverTest extends TestCase
     public function testDriverCannotBeCreated(): void
     {
         static::expectException(LogicException::class);
-        new PantherDriver('test');
+        new PantherDriver('test', ['webServerDir' => __DIR__]);
     }
 
     public function testDriverCanBeCreated(): void
     {
-        static::assertInstanceOf(Client::class, (new PantherDriver('chrome'))->getClient());
+        static::assertInstanceOf(Client::class, (new PantherDriver('chrome', ['webServerDir' => __DIR__]))->getClient());
     }
 }

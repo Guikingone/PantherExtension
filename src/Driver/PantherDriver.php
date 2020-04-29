@@ -21,13 +21,20 @@ use PantherExtension\Driver\Exception\InvalidArgumentException;
 use PantherExtension\Driver\Exception\LogicException;
 use Facebook\WebDriver\WebDriver;
 use Symfony\Component\Panther\Client;
+use Symfony\Component\Panther\PantherTestCaseTrait;
 
 /**
  * @author Guillaume LOULIER <contact@guillaumeloulier.fr>
+ * @author Vincent CHALAMON <vincentchalamon@gmail.com>
  */
 final class PantherDriver extends CoreDriver
 {
-    private const ALLOWED_DRIVERS = ['chrome', 'firefox', 'selenium'];
+    use PantherTestCaseTrait;
+
+    private const CHROME = 'chrome';
+    private const FIREFOX = 'firefox';
+    private const SELENIUM = 'selenium';
+    private const ALLOWED_DRIVERS = [self::CHROME, self::FIREFOX, self::SELENIUM];
     public const DEFAULT_CLIENT_KEY = '_root';
 
     /**
@@ -53,7 +60,7 @@ final class PantherDriver extends CoreDriver
     /**
      * @param string[] $options
      */
-    public function __construct(string $driver = 'chrome', array $options = [])
+    public function __construct(string $driver = self::CHROME, array $options = [])
     {
         $this->client = $this->defineDriver($driver, $options);
     }
@@ -683,13 +690,11 @@ final class PantherDriver extends CoreDriver
         }
 
         switch ($driver) {
-            case 'chrome':
-                return Client::createChromeClient(null, null, $options);
+            case self::CHROME:
+            case self::FIREFOX:
+                return self::createPantherClient(array_merge($options, ['browser' => $driver]), []);
                 break;
-            case 'firefox':
-                return Client::createFirefoxClient(null, null, $options);
-                break;
-            case 'selenium':
+            case self::SELENIUM:
                 $config = $options['config']['selenium'];
                 return Client::createSeleniumClient($config['hub_url'], null, null, $config);
                 break;
