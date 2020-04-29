@@ -380,7 +380,11 @@ final class PantherDriver extends CoreDriver
         $element = $this->client->findElement(WebDriverBy::xpath($xpath));
 
         $selectElement = new WebDriverSelect($element);
-        $selectElement->deselectAll();
+
+        if ($selectElement->isMultiple()) {
+            $selectElement->deselectAll();
+        }
+
         $selectElement->selectByValue($value);
     }
 
