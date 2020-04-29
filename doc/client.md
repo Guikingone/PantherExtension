@@ -6,7 +6,7 @@ of what's provided:
 
 - Additional client
 
-[Symfony Panther](https://github.com/symfony/panther) provides a shortcut which helps you to handle real-time features ([Mercure](https://mercure.rocks/), Websockets, etc),
+[Symfony Panther](https://github.com/symfony/panther) provides a shortcut which helps you to handle real-time features ([Mercure](https://mercure.rocks/), WebSockets, etc),
 this extension provide the same feature with the Gherkin approach: 
 
 ```gherkin
@@ -24,5 +24,5 @@ this extension provide the same feature with the Gherkin approach:
     Then I should see 2 comments
 ```
 
-During this scenario, the extension will create a new client and let you switch to it if needed.
-Once the scenario is done, the clients are automatically reset and you can continue to use the "default" client.
+During this scenario, the extension will create a new client and let you switch to if needed.
+Once the scenario done, the clients are destroyed then you can continue to use the "default" client.

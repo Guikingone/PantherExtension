@@ -3,6 +3,7 @@ composer.lock
 
 # PHPunit
 .phpunit.result.cache
+tests/assets/*.png
 
 # Docker
 docker-compose.override.yml
@@ -12,3 +13,4 @@ docker-compose.override.yml
 
 # Infection
 infection.log
+summary.log

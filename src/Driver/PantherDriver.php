@@ -12,14 +12,18 @@ use Facebook\WebDriver\Exception\NoSuchCookieException;
 use Facebook\WebDriver\Exception\UnsupportedOperationException;
 use Facebook\WebDriver\Exception\WebDriverException;
 use Facebook\WebDriver\Remote\LocalFileDetector;
+use Facebook\WebDriver\Remote\RemoteWebDriver;
+use Facebook\WebDriver\WebDriver;
 use Facebook\WebDriver\WebDriverBy;
-use Facebook\WebDriver\WebDriverDimension;
 use Facebook\WebDriver\WebDriverOptions;
 use Facebook\WebDriver\WebDriverSelect;
 use PantherExtension\Driver\Element\PantherElement;
 use PantherExtension\Driver\Exception\InvalidArgumentException;
 use PantherExtension\Driver\Exception\LogicException;
-use Facebook\WebDriver\WebDriver;
+use PantherExtension\Driver\Helper\CapabilitiesHelper;
+use PantherExtension\Driver\Helper\CookieHelper;
+use PantherExtension\Driver\Helper\OptionsHelper;
+use PantherExtension\Driver\Helper\WaitHelper;
 use Symfony\Component\Panther\Client;
 use Symfony\Component\Panther\PantherTestCaseTrait;
 
@@ -48,6 +52,11 @@ final class PantherDriver extends CoreDriver
     private $client;
 
     /**
+     * @var CookieHelper
+     */
+    private $cookieHelper;
+
+    /**
      * @var string[]
      */
     private $requests = [];
@@ -58,11 +67,54 @@ final class PantherDriver extends CoreDriver
     private $session;
 
     /**
-     * @param string[] $options
+     * @var bool
+     */
+    private $started;
+
+    /**
+     * @var OptionsHelper
+     */
+    private $optionsHelper;
+
+    /**
+     * @var WaitHelper
+     */
+    private $waitHelper;
+
+    /**
+     * @var CapabilitiesHelper
+     */
+    private $capabilitiesHelper;
+
+    /**
+     * @param mixed[] $options
      */
     public function __construct(string $driver = self::CHROME, array $options = [])
     {
         $this->client = $this->defineDriver($driver, $options);
+    }
+
+    public function getClient(): Client
+    {
+        if (null === $this->client) {
+            throw new DriverException('The driver must be defined in order to access it!');
+        }
+
+        return $this->client;
+    }
+    
+    public function getWebDriver(): RemoteWebDriver
+    {
+        if (null === $this->client || !$this->started) {
+            throw new LogicException('The client MUST be defined to access the WebDriver!');
+        }
+
+        return $this->client->getWebDriver();
+    }
+
+    public function getClients(): array
+    {
+        return [$this->client] + $this->additionalClients;
     }
 
     /**
@@ -70,7 +122,18 @@ final class PantherDriver extends CoreDriver
      */
     public function start()
     {
-        $this->client->start();
+        try {
+            $this->client->start();
+            $this->started = true;
+            $this->capabilitiesHelper = new CapabilitiesHelper($this->client);
+            $this->cookieHelper = new CookieHelper($this->client);
+            $this->optionsHelper = new OptionsHelper($this->getWebDriver());
+            $this->waitHelper = new WaitHelper($this->client);
+        } catch (\RuntimeException $exception) {
+            throw new DriverException(
+                sprintf('The driver cannot be started, error message: %s', $exception->getMessage())
+            );
+        }
     }
 
     /**
@@ -78,7 +141,16 @@ final class PantherDriver extends CoreDriver
      */
     public function stop()
     {
-        $this->client->quit();
+        try {
+            $this->additionalClients = [];
+            $this->client->quit();
+            self::stopWebServer();
+            $this->started = false;
+        } catch (\LogicException $exception) {
+            throw new DriverException(
+                sprintf('The driver cannot be stopped, error message "%s"', $exception->getMessage())
+            );
+        }
     }
 
     /**
@@ -86,7 +158,7 @@ final class PantherDriver extends CoreDriver
      */
     public function isStarted()
     {
-        return null !== $this->client;
+        return null !== $this->client && $this->started;
     }
 
     /**
@@ -102,7 +174,18 @@ final class PantherDriver extends CoreDriver
      */
     public function reset()
     {
-        $this->client->restart();
+        if (!$this->started) {
+            return;
+        }
+
+        try {
+            $this->additionalClients = [];
+            $this->getWebDriver()->manage()->deleteAllCookies();
+        } catch (\LogicException $exception) {
+            throw new DriverException(
+                sprintf('The driver cannot reset the current session, error message "%s"', $exception->getMessage())
+            );
+        }
     }
 
     /**
@@ -110,7 +193,11 @@ final class PantherDriver extends CoreDriver
      */
     public function visit($url)
     {
-        $this->client->get($url);
+        try {
+            $this->client->get($url);
+        } catch (\LogicException $exception) {
+            throw new DriverException($exception->getMessage());
+        }
     }
 
     /**
@@ -118,7 +205,11 @@ final class PantherDriver extends CoreDriver
      */
     public function getCurrentUrl()
     {
-        return $this->client->getCurrentURL();
+        try {
+            return $this->client->getCurrentURL();
+        } catch (\LogicException $exception) {
+            throw new DriverException($exception->getMessage());
+        }
     }
 
     /**
@@ -126,7 +217,11 @@ final class PantherDriver extends CoreDriver
      */
     public function reload()
     {
-        $this->client->reload();
+        try {
+            $this->client->reload();
+        } catch (\LogicException $exception) {
+            throw new DriverException($exception->getMessage());
+        }
     }
 
     /**
@@ -134,7 +229,11 @@ final class PantherDriver extends CoreDriver
      */
     public function forward()
     {
-        $this->client->forward();
+        try {
+            $this->client->forward();
+        } catch (\LogicException $exception) {
+            throw new DriverException($exception->getMessage());
+        }
     }
 
     /**
@@ -142,7 +241,38 @@ final class PantherDriver extends CoreDriver
      */
     public function back()
     {
-        $this->client->back();
+        try {
+            $this->client->back();
+        } catch (\LogicException $exception) {
+            throw new DriverException($exception->getMessage());
+        }
+    }
+
+    public function isCapabilityAvailable(string $capability): bool
+    {
+        try {
+            return $this->capabilitiesHelper->isCapabilityAvailable($capability);
+        } catch (LogicException $exception) {
+            throw new DriverException($exception->getMessage());
+        }
+    }
+
+    public function setCapability(string $capability, string $value): void
+    {
+        try {
+            $this->capabilitiesHelper->setCapability($capability, $value);
+        } catch (LogicException $exception) {
+            throw new DriverException($exception->getMessage());
+        }
+    }
+
+    public function getCapabilities(): array
+    {
+        try {
+            return $this->capabilitiesHelper->getCapabilities();
+        } catch (LogicException $exception) {
+            throw new DriverException($exception->getMessage());
+        }
     }
 
     /**
@@ -151,10 +281,14 @@ final class PantherDriver extends CoreDriver
     public function switchToWindow($name = null)
     {
         try {
-            $this->client->switchTo()->window($name);
+            $targetLocator = $this->getWebDriver()->switchTo();
+
+            null === $name ? $targetLocator->defaultContent() : $targetLocator->window($name);
         } catch (\InvalidArgumentException $exception) {
-            throw new DriverException(sprintf('An error occurred when using %s::%s()', self::class, __METHOD__));
+            throw new DriverException($exception->getMessage());
         }
+
+        $this->client->refreshCrawler();
     }
 
     /**
@@ -163,10 +297,14 @@ final class PantherDriver extends CoreDriver
     public function switchToIFrame($name = null)
     {
         try {
-            $this->client->switchTo()->frame($name);
+            $targetLocator = $this->getWebDriver()->switchTo();
+
+            null !== $name ? $targetLocator->frame($name) : $targetLocator->parent();
         } catch (\InvalidArgumentException $exception) {
-            throw new DriverException(sprintf('An error occurred when using %s::%s()', self::class, __METHOD__));
+            throw new DriverException($exception->getMessage());
         }
+
+        $this->client->refreshCrawler();
     }
 
     /**
@@ -185,12 +323,12 @@ final class PantherDriver extends CoreDriver
     }
 
     /**
-     * {@inheritdoc}s
+     * {@inheritdoc}
      */
     public function getResponseHeaders()
     {
         try {
-            $this->client->getResponse()->getHeaders();
+            return $this->client->getResponse()->getHeaders();
         } catch (\LogicException $exception) {
             throw new UnsupportedDriverActionException(
                 sprintf('The %s::%s() method cannot be called when using %s', self::class, __METHOD__, self::class),
@@ -204,12 +342,10 @@ final class PantherDriver extends CoreDriver
      */
     public function setCookie($name, $value = null)
     {
-        $options = $this->client->manage();
-
         try {
-            $options->addCookie(['name' => $name, 'value' => $value]);
-        } catch (\InvalidArgumentException $exception) {
-            throw new DriverException(sprintf('An error occurred when using %s::%s()', self::class, __METHOD__));
+            $this->cookieHelper->setCookie($name, $value);
+        } catch (InvalidArgumentException $exception) {
+            throw new DriverException($exception->getMessage());
         }
     }
 
@@ -218,27 +354,19 @@ final class PantherDriver extends CoreDriver
      */
     public function getCookie($name)
     {
-        $options = $this->client->manage();
-
         try {
-            $options->getCookieNamed($name);
+            return $this->cookieHelper->getCookie($name);
         } catch (NoSuchCookieException $exception) {
-            throw new DriverException(sprintf('An error occurred when using %s::%s()', self::class, __METHOD__));
+            throw new DriverException($exception->getMessage());
         }
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function getStatusCode()
+    public function getSpecificCookie(string $name, string $path, string $domain): string
     {
         try {
-            $this->client->getResponse()->getStatusCode();
-        } catch (\LogicException $exception) {
-            throw new UnsupportedDriverActionException(
-                sprintf('The %s::%s() method cannot be called when using %s', self::class, __METHOD__, self::class),
-                $this
-            );
+            return $this->cookieHelper->getSpecificCookie($name, $path, $domain);
+        } catch (NoSuchCookieException $exception) {
+            throw new DriverException($exception->getMessage());
         }
     }
 
@@ -247,7 +375,11 @@ final class PantherDriver extends CoreDriver
      */
     public function getContent()
     {
-        return $this->client->getPageSource();
+        try {
+            return $this->client->getPageSource();
+        } catch (\LogicException $exception) {
+            throw new DriverException($exception->getMessage());
+        }
     }
 
     /**
@@ -259,11 +391,21 @@ final class PantherDriver extends CoreDriver
     }
 
     /**
-     * {@inheritdoc}
+     * @throws DriverException If an exception is thrown
      */
-    public function getWindowNames()
+    public function takeScreenshot(string $path): void
     {
-        throw new UnsupportedDriverActionException(sprintf('The %s::%s() method cannot be used.', self::class, __METHOD__), $this);
+        try {
+            $this->client->takeScreenshot($path);
+        } catch (\InvalidArgumentException $exception) {
+            throw new DriverException(
+                sprintf('The %s:%s() method encounter an error. Error message: %s', self::class, __METHOD__, $exception->getMessage())
+            );
+        } catch (\LogicException $exception) {
+            throw new DriverException(
+                sprintf('The %s:%s() method encounter an error. Error message: %s', self::class, __METHOD__, $exception->getMessage())
+            );
+        }
     }
 
     /**
@@ -283,7 +425,7 @@ final class PantherDriver extends CoreDriver
         $elements = [];
 
         foreach ($nodes as $key => $node) {
-            $elements[] = new PantherElement(sprintf('(%s)[%d]', $xpath, $key+1), $this->session);
+            $elements[] = new PantherElement(sprintf('(%s)[%d]', $xpath, $key + 1), $this->session);
         }
 
         return $elements;
@@ -294,7 +436,7 @@ final class PantherDriver extends CoreDriver
      */
     public function getTagName($xpath)
     {
-        return $this->client->findElement(WebDriverBy::xpath($xpath))->getTagName();
+        return $this->getWebDriver()->findElement(WebDriverBy::xpath($xpath))->getTagName();
     }
 
     /**
@@ -302,7 +444,7 @@ final class PantherDriver extends CoreDriver
      */
     public function getText($xpath)
     {
-        return $this->client->findElement(WebDriverBy::xpath($xpath))->getText();
+        return $this->getWebDriver()->findElement(WebDriverBy::xpath($xpath))->getText();
     }
 
     /**
@@ -310,7 +452,7 @@ final class PantherDriver extends CoreDriver
      */
     public function getHtml($xpath)
     {
-        return $this->client->findElement(WebDriverBy::xpath($xpath))->html();
+        return $this->getWebDriver()->findElement(WebDriverBy::xpath($xpath))->getAttribute('innerHTML');
     }
 
     /**
@@ -326,7 +468,7 @@ final class PantherDriver extends CoreDriver
      */
     public function getAttribute($xpath, $name)
     {
-        return $this->client->findElement(WebDriverBy::xpath($xpath))->getAttribute($name);
+        return $this->getWebDriver()->findElement(WebDriverBy::xpath($xpath))->getAttribute($name);
     }
 
     /**
@@ -334,7 +476,7 @@ final class PantherDriver extends CoreDriver
      */
     public function getValue($xpath)
     {
-        return $this->client->findElement(WebDriverBy::xpath($xpath))->getAttribute('value');
+        return $this->getWebDriver()->findElement(WebDriverBy::xpath($xpath))->getAttribute('value');
     }
 
     /**
@@ -342,9 +484,11 @@ final class PantherDriver extends CoreDriver
      */
     public function setValue($xpath, $value)
     {
-        $element = $this->client->findElement(WebDriverBy::xpath($xpath));
+        $element = $this->getWebDriver()->findElement(WebDriverBy::xpath($xpath));
 
         $element->sendKeys($value);
+
+        $this->client->refreshCrawler();
     }
 
     /**
@@ -352,11 +496,13 @@ final class PantherDriver extends CoreDriver
      */
     public function check($xpath)
     {
-        $element = $this->client->findElement(WebDriverBy::xpath($xpath));
+        $element = $this->getWebDriver()->findElement(WebDriverBy::xpath($xpath));
 
         if (!$element->isSelected()) {
             $element->click();
         }
+
+        $this->client->refreshCrawler();
     }
 
     /**
@@ -369,6 +515,8 @@ final class PantherDriver extends CoreDriver
         if ($element->isSelected()) {
             $element->click();
         }
+
+        $this->client->refreshCrawler();
     }
 
     /**
@@ -376,7 +524,7 @@ final class PantherDriver extends CoreDriver
      */
     public function isChecked($xpath)
     {
-        return (bool) $this->client->findElement(WebDriverBy::xpath($xpath))->getAttribute('checked');
+        return (bool) $this->getWebDriver()->findElement(WebDriverBy::xpath($xpath))->getAttribute('checked');
     }
 
     /**
@@ -384,7 +532,7 @@ final class PantherDriver extends CoreDriver
      */
     public function selectOption($xpath, $value, $multiple = false)
     {
-        $element = $this->client->findElement(WebDriverBy::xpath($xpath));
+        $element = $this->getWebDriver()->findElement(WebDriverBy::xpath($xpath));
 
         $selectElement = new WebDriverSelect($element);
 
@@ -393,6 +541,8 @@ final class PantherDriver extends CoreDriver
         }
 
         $selectElement->selectByValue($value);
+
+        $this->client->refreshCrawler();
     }
 
     /**
@@ -400,7 +550,13 @@ final class PantherDriver extends CoreDriver
      */
     public function isSelected($xpath)
     {
-        return $this->client->findElement(WebDriverBy::xpath($xpath))->isSelected();
+        $element = $this->getWebDriver()->findElement(WebDriverBy::xpath($xpath));
+
+        try {
+            return $element->isSelected();
+        } catch (\LogicException $exception) {
+            throw new DriverException($exception->getMessage());
+        }
     }
 
     /**
@@ -408,7 +564,7 @@ final class PantherDriver extends CoreDriver
      */
     public function click($xpath)
     {
-        $this->client->findElement(WebDriverBy::xpath($xpath))->click();
+        $this->getWebDriver()->findElement(WebDriverBy::xpath($xpath))->click();
     }
 
     /**
@@ -416,10 +572,25 @@ final class PantherDriver extends CoreDriver
      */
     public function doubleClick($xpath)
     {
-        $element = $this->client->findElement(WebDriverBy::xpath($xpath));
-        $mouse = $this->client->getMouse();
+        $element = $this->getWebDriver()->findElement(WebDriverBy::xpath($xpath));
+        $mouse = $this->getWebDriver()->getMouse();
 
         $mouse->doubleClick($element->getCoordinates());
+
+        $this->client->refreshCrawler();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function rightClick($xpath)
+    {
+        $element = $this->getWebDriver()->findElement(WebDriverBy::xpath($xpath));
+        $mouse = $this->getWebDriver()->getMouse();
+
+        $mouse->contextClick($element->getCoordinates());
+
+        $this->client->refreshCrawler();
     }
 
     /**
@@ -427,14 +598,18 @@ final class PantherDriver extends CoreDriver
      */
     public function attachFile($xpath, $path)
     {
-        $element = $this->client->findElement(WebDriverBy::xpath($xpath));
+        $element = $this->getWebDriver()->findElement(WebDriverBy::xpath($xpath));
 
         if ('input' !== $element->getTagName()) {
-            throw new InvalidArgumentException(sprintf('The current element cannot receive file, please check the selector'));
+            throw new InvalidArgumentException(
+                sprintf('The current element cannot receive file, please check the selector')
+            );
         }
 
         $element->setFileDetector(new LocalFileDetector());
         $element->sendKeys($path);
+
+        $this->client->refreshCrawler();
     }
 
     /**
@@ -442,7 +617,7 @@ final class PantherDriver extends CoreDriver
      */
     public function isVisible($xpath)
     {
-        $element = $this->client->getCrawler()->findElement(WebDriverBy::xpath($xpath));
+        $element = $this->getWebDriver()->findElement(WebDriverBy::xpath($xpath));
 
         return $element->isDisplayed();
     }
@@ -452,10 +627,18 @@ final class PantherDriver extends CoreDriver
      */
     public function mouseOver($xpath)
     {
-        $element = $this->client->findElement(WebDriverBy::xpath($xpath));
-        $mouse = $this->client->getMouse();
+        $webDriver = $this->getWebDriver();
 
-        $mouse->mouseMove($element->getCoordinates());
+        $element = $webDriver->findElement(WebDriverBy::xpath($xpath));
+        $mouse = $webDriver->getMouse();
+
+        try {
+            $mouse->mouseMove($element->getCoordinates());
+        } catch (\LogicException $exception) {
+            throw new DriverException($exception->getMessage());
+        }
+
+        $this->client->refreshCrawler();
     }
 
     /**
@@ -463,9 +646,14 @@ final class PantherDriver extends CoreDriver
      */
     public function keyPress($xpath, $char, $modifier = null)
     {
-        $keyboard = $this->client->getKeyboard();
+        $webDriver = $this->getWebDriver();
 
-        $keyboard->pressKey($char);
+        $element = $webDriver->findElement(WebDriverBy::xpath($xpath));
+        $actions = $webDriver->action();
+
+        $actions->keyDown($element, $char);
+
+        $this->client->refreshCrawler();
     }
 
     /**
@@ -473,9 +661,14 @@ final class PantherDriver extends CoreDriver
      */
     public function keyUp($xpath, $char, $modifier = null)
     {
-        $keyboard = $this->client->getKeyboard();
+        $webDriver = $this->getWebDriver();
 
-        $keyboard->releaseKey($char);
+        $element = $webDriver->findElement(WebDriverBy::xpath($xpath));
+        $actions = $webDriver->action();
+
+        $actions->keyUp($element, $char);
+
+        $this->client->refreshCrawler();
     }
 
     /**
@@ -483,12 +676,42 @@ final class PantherDriver extends CoreDriver
      */
     public function dragTo($sourceXpath, $destinationXpath)
     {
-        $actions = $this->client->action();
+        $webDriver = $this->getWebDriver();
 
-        $sourceElement = $this->client->findElement(WebDriverBy::xpath($sourceXpath));
-        $destinationElement = $this->client->findElement(WebDriverBy::xpath($destinationXpath));
+        $actions = $webDriver->action();
 
-        $actions->dragAndDrop($sourceElement, $destinationElement);
+        $sourceElement = $webDriver->findElement(WebDriverBy::xpath($sourceXpath));
+        $destinationElement = $webDriver->findElement(WebDriverBy::xpath($destinationXpath));
+
+        try {
+            $actions->dragAndDrop($sourceElement, $destinationElement)->perform();
+        } catch (\LogicException $exception) {
+            throw new DriverException($exception->getMessage());
+        }
+
+        $this->client->refreshCrawler();
+    }
+
+    public function scrollTo(int $xOffset, int $yOffset): void
+    {
+        $touchScreen = $this->getWebDriver()->getTouch();
+
+        try {
+            $touchScreen->scroll($xOffset, $yOffset);
+        } catch (\LogicException $exception) {
+            throw new DriverException($exception->getMessage());
+        }
+
+        $this->client->refreshCrawler();
+    }
+
+    public function scrollFromTo(string $xpath, int $xOffset, int $yOffset): void
+    {
+        $touchScreen = $this->getWebDriver()->getTouch();
+        $element = $this->getWebDriver()->findElement(WebDriverBy::xpath($xpath));
+
+        $touchScreen->scrollFromElement($element, $xOffset, $yOffset);
+        $this->client->refreshCrawler();
     }
 
     /**
@@ -496,12 +719,13 @@ final class PantherDriver extends CoreDriver
      */
     public function executeScript($script)
     {
-        $this->client->executeScript($script);
-    }
+        try {
+            $this->client->executeScript($script);
+        } catch (\LogicException $exception) {
+            throw new DriverException($exception->getMessage());
+        }
 
-    public function executeAsyncScript($script)
-    {
-        $this->client->executeAsyncScript($script);
+        $this->client->refreshCrawler();
     }
 
     /**
@@ -509,15 +733,38 @@ final class PantherDriver extends CoreDriver
      */
     public function evaluateScript($script)
     {
-        throw new UnsupportedDriverActionException(sprintf('The %s::%s() method cannot be used.', self::class, __METHOD__), $this);
+        try {
+            return $this->client->executeScript($script);
+        } catch (\LogicException $exception) {
+            throw new DriverException($exception->getMessage());
+        }
+    }
+
+    public function executeAsyncScript(string $script, array $arguments = []): void
+    {
+        try {
+            $this->client->executeAsyncScript($script, $arguments);
+        } catch (\LogicException $exception) {
+            throw new DriverException($exception->getMessage());
+        }
+
+        $this->client->refreshCrawler();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function wait($timeout, $condition)
+    public function wait($timeoutInMilliseconds, $condition)
     {
-        return (bool) $this->client->wait($timeout)->until($condition);
+        if (!\is_string($condition)) {
+            throw new DriverException(
+                sprintf('The %s::%s() method cannot be called with the given arguments', self::class, __METHOD__)
+            );
+        }
+
+        return $this->client->wait($timeoutInMilliseconds / 1000)->until(function () use ($condition): bool {
+            return $this->evaluateScript($condition);
+        });
     }
 
     /**
@@ -525,9 +772,13 @@ final class PantherDriver extends CoreDriver
      */
     public function resizeWindow($width, $height, $name = null)
     {
-        $options = $this->client->manage();
+        try {
+            $this->optionsHelper->resizeWindow($name, $width, $height);
+        } catch (\LogicException $exception) {
+            throw new DriverException($exception->getMessage());
+        }
 
-        $options->window()->setSize(new WebDriverDimension($width, $height));
+        $this->client->refreshCrawler();
     }
 
     /**
@@ -535,9 +786,13 @@ final class PantherDriver extends CoreDriver
      */
     public function maximizeWindow($name = null)
     {
-        $options = $this->client->manage();
+        try {
+            $this->optionsHelper->maximizeWindow($name);
+        } catch (\LogicException $exception) {
+            throw new DriverException($exception->getMessage());
+        }
 
-        $options->window()->maximize();
+        $this->client->refreshCrawler();
     }
 
     /**
@@ -545,29 +800,33 @@ final class PantherDriver extends CoreDriver
      */
     public function submitForm($xpath)
     {
-        $this->client->findElement(WebDriverBy::xpath($xpath))->submit();
+        $this->getWebDriver()->findElement(WebDriverBy::xpath($xpath))->submit();
     }
 
-    public function moveTofullScreen(): void
+    public function moveToFullScreen(): void
     {
-        $options = $this->client->manage();
-
         try {
-            $options->window()->fullscreen();
+            $this->optionsHelper->moveToFullScreen();
         } catch (UnsupportedOperationException $exception) {
             throw new DriverException('The window cannot be be moved to fullscreen.');
         }
+
+        $this->client->refreshCrawler();
     }
 
     public function setOrientation(string $orientationMode = 'PORTRAIT'): void
     {
-        $options = $this->client->manage();
+        $options = $this->getWebDriver()->manage();
 
         try {
             $options->window()->setScreenOrientation($orientationMode);
         } catch (WebDriverException $exception) {
-            throw new DriverException(sprintf('The window cannot be be moved to "%s" mode.', $orientationMode));
+            throw new DriverException(
+                sprintf('The window cannot be be moved to "%s" mode.', $orientationMode)
+            );
         }
+
+        $this->client->refreshCrawler();
     }
 
     /**
@@ -575,36 +834,16 @@ final class PantherDriver extends CoreDriver
      */
     public function getLogs(string $type): array
     {
-        $options = $this->client->manage();
+        $options = $this->getWebDriver()->manage();
 
-        return $options->getLog($type);
-    }
-
-    public function waitFor(string $element, int $timeoutInSeconds = 30, int $intervalInMillisecond = 250): void
-    {
-        if (0 === strpos('@', $element)) {
-            $this->waitForAjax($element, $timeoutInSeconds);
-        }
-
-        $elementLocator = trim($element);
-
-        if ('' === $elementLocator || '/' !== $elementLocator[0]) {
-            $this->client->waitFor($element, $timeoutInSeconds, $intervalInMillisecond);
+        try {
+            return $options->getLog($type);
+        } catch (\InvalidArgumentException $exception) {
+            throw new DriverException($exception->getMessage());
         }
     }
 
-    public function waitForAjax(string $requestIdentifier, int $timeoutInSeconds = 30): void
-    {
-        if (!\array_key_exists($requestIdentifier, $this->requests)) {
-            throw new InvalidArgumentException(
-                sprintf('The "%s" alias does not refer to a current request, please be sure to watch a request before referring to it', $requestIdentifier)
-            );
-        }
-
-        // TODO
-    }
-
-    public function createAdditionalClient(string $name, string $driver, array $options = []): void
+    public function createAdditionalClient(string $name): void
     {
         if (self::DEFAULT_CLIENT_KEY === $name) {
             throw new InvalidArgumentException(
@@ -612,26 +851,8 @@ final class PantherDriver extends CoreDriver
             );
         }
 
-        foreach ($options as $option) {
-            if (!\is_string($option)) {
-                continue;
-            }
-
-            $definedOptions = explode(' => ', $option);
-
-            if (0 === \count($definedOptions)) {
-                continue;
-            }
-
-            if ('port' === $definedOptions[0]) {
-                $options['port'] = $definedOptions[1];
-            }
-        }
-
         try {
-            $this->additionalClients[$name] = $this->defineDriver($driver, array_merge($options, [
-                'port' => $options['port'] ?? 9080,
-            ]));
+            $this->additionalClients[$name] = self::createAdditionalPantherClient();
         } catch (LogicException $exception) {
             throw new DriverException('The desired client cannot be created, please check the requested driver and options.');
         }
@@ -673,17 +894,16 @@ final class PantherDriver extends CoreDriver
         $this->additionalClients = [];
     }
 
-    public function getClient(): Client
+    public function getWaitHelper(): WaitHelper
     {
-        return $this->client;
+        if (null === $this->client || !$this->started) {
+            throw new LogicException('The client MUST be defined to access the WaitHelper!');
+        }
+
+        return $this->waitHelper;
     }
 
-    public function getClients(): array
-    {
-        return [$this->client] + $this->additionalClients;
-    }
-
-    private function defineDriver(string $driver, array $options = []): WebDriver
+    private function defineDriver(string $driver, array $options = [], array $kernelOptions = []): WebDriver
     {
         if (!\in_array($driver, self::ALLOWED_DRIVERS)) {
             throw new LogicException('The desired driver cannot be instantiated');
@@ -692,12 +912,10 @@ final class PantherDriver extends CoreDriver
         switch ($driver) {
             case self::CHROME:
             case self::FIREFOX:
-                return self::createPantherClient(array_merge($options, ['browser' => $driver]), []);
-                break;
+                return self::createPantherClient(array_merge($options, ['browser' => $driver]), $kernelOptions);
             case self::SELENIUM:
                 $config = $options['config']['selenium'];
                 return Client::createSeleniumClient($config['hub_url'], null, null, $config);
-                break;
             default:
                 throw new LogicException('The desired driver cannot be instantiated');
         }

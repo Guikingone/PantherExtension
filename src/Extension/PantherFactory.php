@@ -47,6 +47,9 @@ final class PantherFactory implements DriverFactory
                         ->scalarNode('hub_url')->defaultNull()->end()
                     ->end()
                 ->end()
+                ->scalarNode('screenshots_path')
+                    ->defaultValue('')->end()
+                ->end()
             ->end()
         ;
     }

@@ -35,6 +35,10 @@ php-cs-fixer: ## Run PHP-CS-FIXER against a specific DIRECTORY
 php-cs-fixer:
 	$(PHP) vendor/bin/php-cs-fixer fix $(DIRECTORY)
 
+phpstan: ## Run PHPStan against a specific DIRECTORY (a specific LEVEL can be define)
+phpstan:
+	$(PHP) vendor/bin/phpstan analyse $(DIRECTORY) --level $(or $(LEVEL), 8)
+
 ##
 ## Tests
 ##---------------------------------------------------------------------------

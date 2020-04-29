@@ -1,7 +1,8 @@
 FROM php:7.1.33-cli
 
 ENV APP_DIR=/srv/app \
-    BUILD_SCRIPTS_DIR=/build-scripts
+    BUILD_SCRIPTS_DIR=/build-scripts \
+    PANTHER_NO_SANDBOX=1
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \

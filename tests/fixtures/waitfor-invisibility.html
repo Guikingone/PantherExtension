@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>WaitFor - Text Invisibility</title>
+    </head>
+    <body>
+    <div id="root">
+        <p class="textContent">Hello!</p>
+    </div>
+
+    <button type="button" id="textButton">Click me!</button>
+
+    <script type="text/javascript">
+      document.getElementById('textButton').addEventListener('click', function() {
+        document.querySelector('#root').style.display = 'none';
+      });
+    </script>
+    </body>
+</html>

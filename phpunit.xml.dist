@@ -10,7 +10,11 @@
          convertErrorsToExceptions="true"
          convertNoticesToExceptions="true"
          convertWarningsToExceptions="true"
+         bootstrap="vendor/autoload.php"
          verbose="true">
+    <php>
+        <env name="PANTHER_NO_SANDBOX" value="1" />
+    </php>
 
     <filter>
         <whitelist>
@@ -19,7 +23,7 @@
     </filter>
 
     <testsuites>
-        <testsuite name="PantherDriver Test Suite">
+        <testsuite name="PantherExtension Test Suite">
             <directory>tests/</directory>
         </testsuite>
     </testsuites>

@@ -23,6 +23,7 @@ default:
     default:
       contexts:
         - PantherExtension\Context\PantherContext:
+        - PantherExtension\Context\WaitContext:
         # Your contexts
 
   extensions:
@@ -35,6 +36,8 @@ default:
           panther:
             driver: 'chrome' # Or 'firefox', 'selenium', 'chrome' is the default value
 ```
+
+**`WaitContext` has been introduced in 0.4**
 
 If you need to use `Selenium`, just adapt the session configuration:
 
@@ -60,46 +63,46 @@ Here's a simple example using a POC project which call [API-Platform website](ht
 Feature:
   As a newbie in API-Platform, I want to document myself in many features
 
-  Scenario: I should be able to see the main documentation                            # features/demo.feature:4
-    Given I am on "/"                                                                 # FeatureContext::visit()
-    And I should see "REST and GraphQL framework to build modern API-driven projects" # FeatureContext::assertPageContainsText()
+  Scenario: I should be able to see the main documentation                           
+    Given I am on "/"                                                                
+    And I should see "REST and GraphQL framework to build modern API-driven projects"
 
-  Scenario: I should be able to see the main documentation                                            # features/demo.feature:8
-    Given I am on "/"                                                                                 # FeatureContext::visit()
-    And I go to "/docs/distribution/"                                                                 # FeatureContext::visit()
-    Then I should see "API Platform is the most advanced API platform, in any framework or language." # FeatureContext::assertPageContainsText()
+  Scenario: I should be able to see the main documentation                                           
+    Given I am on "/"                                                                                
+    And I go to "/docs/distribution/"                                                                
+    Then I should see "API Platform is the most advanced API platform, in any framework or language."
 
-  Scenario: I should be able to document myself about GraphQL support # features/demo.feature:13
-    Given I am on "/"                                                 # FeatureContext::visit()
-    And I follow "Get started"                                        # FeatureContext::clickLink()
-    When I follow "Adding GraphQL Support"                            # FeatureContext::clickLink()
-    Then I should be on "/docs/distribution/#adding-graphql-support"  # FeatureContext::assertPageAddress()
-    Then I should see "You now have a GraphQL API!"                   # FeatureContext::assertPageContainsText()
+  Scenario: I should be able to document myself about GraphQL support
+    Given I am on "/"                                                
+    And I follow "Get started"                                       
+    When I follow "Adding GraphQL Support"                           
+    Then I should be on "/docs/distribution/#adding-graphql-support" 
+    Then I should see "You now have a GraphQL API!"                  
 
-  Scenario: I should be able to document myself about GraphQL support thanks to the search field # features/demo.feature:20
-    Given I am on "/"                                                                            # FeatureContext::visit()
-    When I fill in "SEARCH..." with "GraphQL"                                                    # FeatureContext::fillField()
-    And I wait for "#algolia-autocomplete-listbox-0"                                             # PantherExtension\Context\PantherContext::iWaitForElement()
-    Then I should see "Documentation"                                                            # FeatureContext::assertPageContainsText()
-    And I should see "Search by"                                                                 # FeatureContext::assertPageContainsText()
-    And I should see "Enabling GraphQL"                                                          # FeatureContext::assertPageContainsText()
+  Scenario: I should be able to document myself about GraphQL support thanks to the search field
+    Given I am on "/"                                                                           
+    When I fill in "SEARCH..." with "GraphQL"                                                   
+    And I wait for "#algolia-autocomplete-listbox-0"                                            
+    Then I should see "Documentation"                                                           
+    And I should see "Search by"                                                                
+    And I should see "Enabling GraphQL"                                                         
 
-  Scenario: I should be able to test the demo                   # features/demo.feature:28
-    Given I am on "/"                                           # FeatureContext::visit()
-    And I follow "Demo"                                         # FeatureContext::clickLink()
-    Then I should be on "https://demo-client.api-platform.com/" # FeatureContext::assertPageAddress()
-    When I follow "API"                                         # FeatureContext::clickLink()
-    Then I should be on "https://demo.api-platform.com/"        # FeatureContext::assertPageAddress()
+  Scenario: I should be able to test the demo                  
+    Given I am on "/"                                          
+    And I follow "Demo"                                        
+    Then I should be on "https://demo-client.api-platform.com/"
+    When I follow "API"                                        
+    Then I should be on "https://demo.api-platform.com/"       
 
-  Scenario: I should be able to test the demo                                          # features/demo.feature:35
-    Given I am on "/"                                                                  # FeatureContext::visit()
-    And I follow "Community"                                                           # FeatureContext::clickLink()
-    And I create a new client "test" using the "chrome" driver                         # PantherExtension\Context\PantherContext::iCreateANewClient()
-    Then I switch to client "test"                                                     # PantherExtension\Context\PantherContext::iSwitchToANewClient()
-    And I go to "/"                                                                    # FeatureContext::visit()
-    Then I should see "REST and GraphQL framework to build modern API-driven projects" # FeatureContext::assertPageContainsText()
-    Then I remove the client "test"                                                    # PantherExtension\Context\PantherContext::iRemoveTheClient()
-    Then I should see "API Platform's community"                                       # FeatureContext::assertPageContainsText()
+  Scenario: I should be able to test the demo                                         
+    Given I am on "/"                                                                 
+    And I follow "Community"                                                          
+    And I create a new client "test" using the "chrome" driver                        
+    Then I switch to client "test"                                                    
+    And I go to "/"                                                                   
+    Then I should see "REST and GraphQL framework to build modern API-driven projects"
+    Then I remove the client "test"                                                   
+    Then I should see "API Platform's community"                                      
 
 6 scenarios (6 passed)
 29 steps (29 passed)

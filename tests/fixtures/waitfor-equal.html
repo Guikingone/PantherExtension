@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>WaitFor - Text equal</title>
+    </head>
+    <body>
+        <div id="root"></div>
+
+        <template id="t-hello">
+            <p id="hello">Hello</p>
+        </template>
+
+        <script type="text/javascript">
+          window.setTimeout(function () {
+            document.getElementById('root').textContent = 'Hello';
+          }, 1000);
+        </script>
+    </body>
+</html>

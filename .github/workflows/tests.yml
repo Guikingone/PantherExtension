@@ -5,13 +5,14 @@ on:
       - master
 jobs:
   panther_extension:
-    name: PHP ${{ matrix.php-versions }}
+    name: PHP ${{ matrix.php-versions }} - ${{ matrix.composer-dependencies }}
     # https://hub.docker.com/_/ubuntu/
     runs-on: ubuntu-18.04
     strategy:
       fail-fast: true
       matrix:
         php-versions: ['7.1', '7.2', '7.3', '7.4']
+        composer-dependencies: ['', 'lowest']
     steps:
       # https://github.com/actions/checkout (official)
       - name: Checkout
@@ -39,24 +40,34 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-
+          key: ${{ runner.os }}-composer-${{ matrix.composer-dependencies }}-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-${{ matrix.composer-dependencies }}-
 
       - name: Install Composer dependencies
-        run: composer install
+        if: matrix.composer-dependencies == ''
+        run: composer update --no-suggest
+
+      - name: Install Composer dependencies - Lowest
+        if: matrix.composer-dependencies == 'lowest'
+        run: composer update --no-suggest --prefer-lowest
 
       # —— Style —————————————————————————————————————————————————————————
       - name: Launch PHP-CS-FIXER - src
-        run: php vendor/bin/php-cs-fixer fix --dry-run src
+        uses: docker://oskarstark/php-cs-fixer-ga
+        with:
+          args: --dry-run src
 
       # —— Style —————————————————————————————————————————————————————————
       - name: Launch PHP-CS-FIXER - tests
-        run: php vendor/bin/php-cs-fixer fix --dry-run tests
+        uses: docker://oskarstark/php-cs-fixer-ga
+        with:
+          args: --dry-run tests
 
       # —— PHPUnit —————————————————————————————————————————————————————————
       - name: Launch PHPUnit tests
         run: php vendor/bin/phpunit tests
-
-      # —— Infection —————————————————————————————————————————————————————————
-      - name: Launch Infection analysis
-        run: php vendor/bin/infection
+#
+#      # —— Infection —————————————————————————————————————————————————————————
+#      - name: Launch Infection analysis
+#        run: php vendor/bin/infection
+#        continue-on-error: true

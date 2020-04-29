@@ -6,7 +6,7 @@ namespace Tests\Context;
 
 use Behat\Gherkin\Node\TableNode;
 use Behat\Mink\Exception\DriverException;
-use PantherExtension\Context\PantherContext;
+use PantherExtension\Context\ClientContext;
 use PantherExtension\Driver\Exception\InvalidArgumentException;
 use PantherExtension\Driver\Exception\LogicException;
 use PHPUnit\Framework\TestCase;
@@ -14,38 +14,20 @@ use PHPUnit\Framework\TestCase;
 /**
  * @author Guillaume LOULIER <contact@guillaumeloulier.fr>
  */
-final class PantherContextTest extends TestCase
+final class ClientContextTest extends TestCase
 {
     use ContextTestTrait;
-
-    public function testWaitCannotBeCalledWithoutSession(): void
-    {
-        static::expectException(\RuntimeException::class);
-        (new PantherContext())->iWaitForElement('@userList');
-    }
-
-    public function testWaitDuringCannotBeCalledWithoutSession(): void
-    {
-        static::expectException(\RuntimeException::class);
-        (new PantherContext())->iWaitForElementDuring('@userList', 10);
-    }
-
-    public function testWaitDuringEveryCannotBeCalledWithoutSession(): void
-    {
-        static::expectException(\RuntimeException::class);
-        (new PantherContext())->iWaitForElementDuringEveryMilliseconds('@userList', 10, 150);
-    }
 
     public function testANewClientCannotBeCreatedOnEmptySession(): void
     {
         static::expectException(\RuntimeException::class);
-        (new PantherContext())->iCreateANewClient('test');
+        (new ClientContext())->iCreateANewClient('test');
     }
 
     public function testANewClientCannotBeCreatedWithReservedName(): void
     {
         $mink = $this->createMinkContext(self::once());
-        $context = new PantherContext();
+        $context = new ClientContext();
         $context->setMink($mink);
 
         static::expectException(InvalidArgumentException::class);
@@ -55,7 +37,7 @@ final class PantherContextTest extends TestCase
     public function testANewClientCanBeCreated(): void
     {
         $mink = $this->createMinkContext(self::once());
-        $context = new PantherContext();
+        $context = new ClientContext();
         $context->setMink($mink);
 
         $context->iCreateANewClient('test');
@@ -69,7 +51,7 @@ final class PantherContextTest extends TestCase
             2 => ['bar', 'chrome'],
         ]);
 
-        $context = new PantherContext();
+        $context = new ClientContext();
 
         static::expectException(\RuntimeException::class);
         $context->iCreateANewSetOfClientUsingTheDriveAndTheFollowingOptions($table);
@@ -84,7 +66,7 @@ final class PantherContextTest extends TestCase
             2 => ['bar', 'chrome'],
         ]);
 
-        $context = new PantherContext();
+        $context = new ClientContext();
         $context->setMink($mink);
 
         $context->iCreateANewSetOfClientUsingTheDriveAndTheFollowingOptions($table);
@@ -99,7 +81,7 @@ final class PantherContextTest extends TestCase
             2 => ['bar', 'chrome', 'port => 9080'],
         ]);
 
-        $context = new PantherContext();
+        $context = new ClientContext();
         $context->setMink($mink);
 
         $context->iCreateANewSetOfClientUsingTheDriveAndTheFollowingOptions($table);
@@ -108,14 +90,14 @@ final class PantherContextTest extends TestCase
     public function testTheClientCannotBeSwitchedOnEmptySession(): void
     {
         static::expectException(\RuntimeException::class);
-        (new PantherContext())->iSwitchToANewClient('test');
+        (new ClientContext())->iSwitchToANewClient('test');
     }
 
     public function testTheClientCannotBeSwitchedOnEmptyArray(): void
     {
         $mink = $this->createMinkContext(self::once());
 
-        $context = new PantherContext();
+        $context = new ClientContext();
         $context->setMink($mink);
 
         static::expectException(InvalidArgumentException::class);
@@ -126,7 +108,7 @@ final class PantherContextTest extends TestCase
     {
         $mink = $this->createMinkContext(self::exactly(2));
 
-        $context = new PantherContext();
+        $context = new ClientContext();
         $context->setMink($mink);
 
         $context->iCreateANewClient('test');
@@ -136,14 +118,14 @@ final class PantherContextTest extends TestCase
     public function testTheRootClientCannotBeUsedOnEmptySession(): void
     {
         static::expectException(\RuntimeException::class);
-        (new PantherContext())->iSwitchBackToDefaultClient();
+        (new ClientContext())->iSwitchBackToDefaultClient();
     }
 
     public function testTheRootClientCannotBeUsedOnEmptyArray(): void
     {
         $mink = $this->createMinkContext(self::once());
 
-        $context = new PantherContext();
+        $context = new ClientContext();
         $context->setMink($mink);
 
         static::expectException(InvalidArgumentException::class);
@@ -154,7 +136,7 @@ final class PantherContextTest extends TestCase
     {
         $mink = $this->createMinkContext(self::exactly(3));
 
-        $context = new PantherContext();
+        $context = new ClientContext();
         $context->setMink($mink);
 
         $context->iCreateANewClient('test');
@@ -165,13 +147,13 @@ final class PantherContextTest extends TestCase
     public function testTheRootClientCannotBeRemovedOnEmptySession(): void
     {
         static::expectException(\RuntimeException::class);
-        (new PantherContext())->iRemoveTheClient('_root');
+        (new ClientContext())->iRemoveTheClient('_root');
     }
 
     public function testTheRootClientCannotBeRemoved(): void
     {
         $mink = $this->createMinkContext(self::once());
-        $context = new PantherContext();
+        $context = new ClientContext();
         $context->setMink($mink);
 
         static::expectException(DriverException::class);
@@ -181,14 +163,14 @@ final class PantherContextTest extends TestCase
     public function testClientsCannotBeCountedOnEmptySession(): void
     {
         static::expectException(\RuntimeException::class);
-        (new PantherContext())->iShouldHave(2);
+        (new ClientContext())->iShouldHave(2);
     }
 
     public function testClientsCannotBeCountedOnEmptyArray(): void
     {
         $mink = $this->createMinkContext(self::once());
 
-        $context = new PantherContext();
+        $context = new ClientContext();
         $context->setMink($mink);
 
         static::expectException(LogicException::class);
@@ -199,56 +181,8 @@ final class PantherContextTest extends TestCase
     {
         $mink = $this->createMinkContext(self::once());
 
-        $context = new PantherContext();
+        $context = new ClientContext();
         $context->setMink($mink);
         $context->iShouldHave(1);
-    }
-
-    public function testScreenCannotSwitchToFullScreenWithoutSession(): void
-    {
-        static::expectException(\RuntimeException::class);
-        (new PantherContext())->iSwitchToFullScreen();
-    }
-
-    public function testScreenCannotChangeOrientationWithoutSession(): void
-    {
-        static::expectException(\RuntimeException::class);
-        (new PantherContext())->iChangeTheScreenOrientation();
-    }
-
-    public function testScrollCannotBeStartedWithoutSession(): void
-    {
-        static::expectException(\RuntimeException::class);
-        (new PantherContext())->iScrollTo(1, 2);
-    }
-
-    public function testScrollFromToCannotBeStartedWithoutSession(): void
-    {
-        static::expectException(\RuntimeException::class);
-        (new PantherContext())->iScrollFromTo('test', 1, 2);
-    }
-
-    public function testCapabilityCannotBeCheckedWithoutSession(): void
-    {
-        static::expectException(\RuntimeException::class);
-        (new PantherContext())->ifTheBrowserCapabilityIsEnabled('test');
-    }
-
-    public function testCapabilityCannotBeSetWithoutSession(): void
-    {
-        static::expectException(\RuntimeException::class);
-        (new PantherContext())->iTryToSetANewBrowserCapabilityWithTheValue('test', 'test');
-    }
-
-    public function testScreenshotCannotBeTakenWithoutSession(): void
-    {
-        static::expectException(\RuntimeException::class);
-        (new PantherContext())->iTakeANewScreenshot(sys_get_temp_dir());
-    }
-
-    public function testScriptCannotBeExecutedAsynchronouslyWithoutSession(): void
-    {
-        static::expectException(\RuntimeException::class);
-        (new PantherContext())->iExecuteAnAsyncScript('1 + 1');
     }
 }
