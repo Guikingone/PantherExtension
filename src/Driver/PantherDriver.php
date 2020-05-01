@@ -31,9 +31,9 @@ final class PantherDriver extends CoreDriver
 {
     use PantherTestCaseTrait;
 
-    private const CHROME = 'chrome';
-    private const FIREFOX = 'firefox';
-    private const SELENIUM = 'selenium';
+    public const CHROME = 'chrome';
+    public const FIREFOX = 'firefox';
+    public const SELENIUM = 'selenium';
     private const ALLOWED_DRIVERS = [self::CHROME, self::FIREFOX, self::SELENIUM];
     public const DEFAULT_CLIENT_KEY = '_root';
 
