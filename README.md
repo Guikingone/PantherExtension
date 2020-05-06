@@ -1,6 +1,9 @@
 Panther Mink Extension
 ======================
 
+![PantherExtension CI](https://github.com/Guikingone/panther-extension/workflows/PantherExtension%20CI/badge.svg?branch=master)
+![PantherExtension CI - Config](https://github.com/Guikingone/panther-extension/workflows/PantherExtension%20CI%20-%20Config/badge.svg?branch=master)
+
 Mink extension for controlling `Chrome | Firefox | Selenium` thanks to [Symfony Panther](https://github.com/symfony/panther).
 
 ## Foreword:
