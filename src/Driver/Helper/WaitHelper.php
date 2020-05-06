@@ -40,6 +40,22 @@ final class WaitHelper
         $this->client->waitFor($element, $timeoutInSeconds, $intervalInMillisecond);
     }
 
+    public function waitForVisibility(string $elementLocator, int $timeoutInSeconds = 30, int $intervalInMilliseconds = 250): void
+    {
+        $locator = trim($elementLocator);
+
+        $by = '' === $locator || '/' !== $locator[0]
+            ? WebDriverBy::cssSelector($locator)
+            : WebDriverBy::xpath($locator)
+        ;
+
+        $this->client->wait($timeoutInSeconds, $intervalInMilliseconds)->until(
+            WebDriverExpectedCondition::visibilityOfElementLocated($by)
+        );
+
+        $this->client->refreshCrawler();
+    }
+
     public function waitForText(string $elementLocator, string $text, bool $strict = false, int $timeoutInSeconds = 30, int $intervalInMilliseconds = 250): void
     {
         $this->checkResearchContent($text);

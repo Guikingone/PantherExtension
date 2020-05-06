@@ -293,6 +293,18 @@ final class PantherDriverTest extends TestCase
         static::assertSame('Hello', $this->driver->getClient()->getCrawler()->filter('#hello')->text());
     }
 
+    /**
+     * @dataProvider waitForDataProvider
+     */
+    public function testClientCanWaitForElementVisibility(string $locator): void
+    {
+        $this->driver->start();
+        $this->driver->visit('/waitfor.html');
+        $this->driver->getWaitHelper()->waitForVisibility($locator);
+
+        static::assertSame('Hello', $this->driver->getClient()->getCrawler()->filter('#hello')->text());
+    }
+
     public function testClientCanWaitForTextToBeVisible(): void
     {
         $this->driver->start();

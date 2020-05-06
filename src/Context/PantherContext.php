@@ -12,8 +12,6 @@ use Behat\MinkExtension\Context\RawMinkContext;
 use Facebook\WebDriver\Exception\NoSuchCookieException;
 use Facebook\WebDriver\Exception\NoSuchElementException;
 use Facebook\WebDriver\Exception\TimeoutException;
-use Facebook\WebDriver\WebDriverBy;
-use Facebook\WebDriver\WebDriverExpectedCondition;
 use PantherExtension\Driver\Exception\InvalidArgumentException;
 use PantherExtension\Driver\Exception\LogicException;
 use PantherExtension\Driver\PantherDriver;
@@ -94,7 +92,7 @@ final class PantherContext extends RawMinkContext
         $driver = $this->getDriver();
 
         try {
-            $driver->wait(3000, WebDriverExpectedCondition::visibilityOfAnyElementLocated(WebDriverBy::cssSelector($element)));
+            $driver->getWaitHelper()->waitForVisibility($element);
         } catch (TimeoutException $exception) {
             throw new LogicException(sprintf('The desired element cannot be found in the given timeout or seems to appear later than expected.'));
         } catch (NoSuchElementException $exception) {
@@ -113,7 +111,7 @@ final class PantherContext extends RawMinkContext
         $driver = $this->getDriver();
 
         try {
-            $driver->wait($timeoutInMilliseconds, WebDriverExpectedCondition::visibilityOfAnyElementLocated(WebDriverBy::cssSelector($element)));
+            $driver->getWaitHelper()->waitForVisibility($element, $timeoutInMilliseconds / 1000);
         } catch (TimeoutException $exception) {
             throw new LogicException(sprintf('The desired element cannot be found in the given timeout or seems to appear later than expected.'));
         } catch (NoSuchElementException $exception) {
