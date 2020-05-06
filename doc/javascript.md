@@ -57,8 +57,8 @@ build around `WebDriver` and give you shortcuts to wait for text, let's see how 
 # ...
 
   And I wait for ".text" to be equal to "New Random text"
-  And I wait that ".text" is equal to "New Random text" during 10 seconds # Waiting with a timeout
-  And I wait that ".text" is equal to "New Random text" during 10 seconds every 200 milliseconds # Waiting with a timeout and a retry strategy
+  And I wait for ".text" to be equal to "New Random text" during 10 seconds # Waiting with a timeout
+  And I wait for ".text" to be equal to "New Random text" during 10 seconds every 200 milliseconds # Waiting with a timeout and a retry strategy
 ```
 
 What if you only need to check that some element "contains" a specific text?
@@ -67,8 +67,8 @@ What if you only need to check that some element "contains" a specific text?
 # ...
 
   And I wait for ".text" to contains "New Random text"
-  And I wait that ".text" contains "New Random text" during 10 seconds # Waiting with a timeout
-  And I wait that ".text" contains "New Random text" during 10 seconds every 200 milliseconds # Waiting with a timeout and a retry strategy
+  And I wait for ".text" to contains "New Random text" during 10 seconds # Waiting with a timeout
+  And I wait for ".text" to contains "New Random text" during 10 seconds every 200 milliseconds # Waiting with a timeout and a retry strategy
 ```
 
 **Note: By default the timeout is 30 seconds, retry strategy is 250 milliseconds**
