@@ -397,11 +397,7 @@ final class PantherDriver extends CoreDriver
     {
         try {
             $this->client->takeScreenshot($path);
-        } catch (\InvalidArgumentException $exception) {
-            throw new DriverException(
-                sprintf('The %s:%s() method encounter an error. Error message: %s', self::class, __METHOD__, $exception->getMessage())
-            );
-        } catch (\LogicException $exception) {
+        } catch (\InvalidArgumentException|\LogicException $exception) {
             throw new DriverException(
                 sprintf('The %s:%s() method encounter an error. Error message: %s', self::class, __METHOD__, $exception->getMessage())
             );

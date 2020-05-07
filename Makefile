@@ -39,6 +39,14 @@ phpstan: ## Run PHPStan against a specific DIRECTORY (a specific LEVEL can be de
 phpstan:
 	$(PHP) vendor/bin/phpstan analyse $(DIRECTORY) --level $(or $(LEVEL), 8)
 
+rector-dry: ## Run Rector in --dry-run mode
+rector-dry:
+	$(DOCKER) run -v $(PWD):/project rector/rector process /project --config /project/rector.yaml --dry-run
+
+rector: ## Run Rector
+rector:
+	$(DOCKER) run -v $(PWD):/project rector/rector process /project --config /project/rector.yaml --dry-run
+
 ##
 ## Tests
 ##---------------------------------------------------------------------------
