@@ -47,6 +47,7 @@ final class CookieHelperTest extends TestCase
     {
         $this->driver->start();
         $this->driver->getClient()->getCookieJar()->clear();
+
         $this->driver->visit('/cookie.php');
         $cookie = $this->driver->getSpecificCookie('barcelona', '/cookie.php', '127.0.0.1');
 

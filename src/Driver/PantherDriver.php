@@ -146,6 +146,10 @@ final class PantherDriver extends CoreDriver
             $this->client->quit();
             self::stopWebServer();
             $this->started = false;
+            $this->capabilitiesHelper = null;
+            $this->cookieHelper = null;
+            $this->optionsHelper = null;
+            $this->waitHelper = null;
         } catch (\LogicException $exception) {
             throw new DriverException(
                 sprintf('The driver cannot be stopped, error message "%s"', $exception->getMessage())
@@ -181,6 +185,7 @@ final class PantherDriver extends CoreDriver
         try {
             $this->additionalClients = [];
             $this->getWebDriver()->manage()->deleteAllCookies();
+            $this->client->quit();
         } catch (\LogicException $exception) {
             throw new DriverException(
                 sprintf('The driver cannot reset the current session, error message "%s"', $exception->getMessage())

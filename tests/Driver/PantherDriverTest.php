@@ -94,6 +94,19 @@ final class PantherDriverTest extends TestCase
         static::assertFalse($this->driver->isStarted());
     }
 
+    public function testDriverCanRestartMultipleTimes(): void
+    {
+        $this->driver->start();
+        $this->driver->visit('/basic.html');
+        $this->driver->stop();
+        static::assertFalse($this->driver->isStarted());
+
+        $this->driver->start();
+        $this->driver->visit('/basic.html');
+        $this->driver->stop();
+        static::assertFalse($this->driver->isStarted());
+    }
+
     public function testDriverCanBeReset(): void
     {
         $this->driver->start();

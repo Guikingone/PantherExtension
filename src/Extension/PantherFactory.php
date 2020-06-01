@@ -50,6 +50,9 @@ final class PantherFactory implements DriverFactory
                 ->scalarNode('screenshots_path')
                     ->defaultValue('')->end()
                 ->end()
+                ->scalarNode('ajax_tracking')
+                    ->defaultValue(false)
+                ->end()
             ->end()
         ;
     }
@@ -68,6 +71,7 @@ final class PantherFactory implements DriverFactory
             ['config' => [
                 'selenium' => $config['selenium'],
             ]],
+            $config['ajax_tracking'],
         ]);
     }
 }
